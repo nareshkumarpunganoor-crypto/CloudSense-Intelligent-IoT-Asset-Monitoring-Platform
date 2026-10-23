@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>CloudSense — Intelligent IoT Asset Monitoring</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --ink: #172230;
+      --muted: #82909f;
+      --line: #e8edf2;
+      --surface: #ffffff;
+      --bg: #f5f7fa;
+      --navy: #132431;
+      --teal: #10a982;
+      --teal-dark: #087d61;
+      --teal-pale: #e7f7f1;
+      --amber: #e9a23b;
+      --amber-pale: #fff5e6;
+      --red: #e46b6b;
+      --red-pale: #fff0ef;
+      --blue: #6c91e8;
+      --shadow: 0 8px 28px rgba(25, 43, 59, .045);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .app { min-height: 100vh; display: flex; }
+    .sidebar {
+      width: 248px;
+      flex: 0 0 248px;
+      background: var(--navy);
+      color: #c4d0d8;
+      padding: 25px 16px 19px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: transform .25s ease;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px 34px; }
+    .brand-mark {
+      width: 35px; height: 35px; border-radius: 11px;
+      display: grid; place-items: center;
+      background: linear-gradient(145deg, #27c49a, #0b876b);
+      box-shadow: 0 6px 16px rgba(16,169,130,.25);
+    }
+    .brand-mark svg { width: 20px; height: 20px; }
+    .brand-name { color: #fff; font: 800 18px "Manrope", sans-serif; letter-spacing: -.7px; }
+    .brand-name span { color: #48d6b0; }
+    .nav-label { color: #718492; font-size: 10px; font-weight: 700; letter-spacing: 1.3px; padding: 0 12px 10px; }
+    .nav-list { display: grid; gap: 5px; }
+    .nav-item {
+      color: #adbdc7; text-decoration: none; border: 0; background: transparent;
+      width: 100%; display: flex; align-items: center; gap: 12px;
+      padding: 11px 12px; border-radius: 9px; text-align: left;
+      transition: .2s; font-weight: 500; font-size: 13px;
+    }
+    .nav-item svg { width: 17px; height: 17px; opacity: .82; }
+    .nav-item:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .nav-item.active { background: rgba(40, 192, 151, .15); color: #6ce0bd; }
+    .nav-item.active svg { opacity: 1; }
+    .nav-count {
+      margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px;
+      border-radius: 6px; display: grid; place-items: center;
+      color: #ffca8a; background: rgba(236, 163, 63, .16); font-size: 10px; font-weight: 700;
+    }
+    .sidebar-spacer { flex: 1; }
+    .plan-card {
+      margin: 20px 4px 17px; padding: 15px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(36, 65, 78, .9), rgba(24, 48, 61, .9));
+      border: 1px solid rgba(255,255,255,.07);
+    }
+    .plan-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+    .plan-top strong { color: #fff; font-size: 12px; }
+    .plan-top span { color: #5ed5b2; font-size: 10px; font-weight: 700; }
+    .plan-card p { margin: 0 0 12px; color: #9aadb8; font-size: 11px; line-height: 1.55; }
+    .plan-progress { height: 4px; border-radius: 4px; background: #354c57; overflow: hidden; }
+    .plan-progress span { display: block; width: 68%; height: 100%; background: #27c49a; border-radius: inherit; }
+    .plan-foot { display: flex; justify-content: space-between; margin-top: 7px; color: #8da1ad; font-size: 10px; }
+    .profile { border-top: 1px solid rgba(255,255,255,.08); padding: 17px 6px 0; display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#edcaa8,#b77755); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-info strong { display: block; color: #eef3f5; font-size: 12px; font-weight: 600; }
+    .profile-info span { color: #8ca0ab; font-size: 10px; }
+    .profile button { background: none; border: 0; color: #8ca0ab; padding: 5px; }
+
+    .main { min-width: 0; flex: 1; }
+    .topbar {
+      height: 76px; padding: 0 36px; background: rgba(255,255,255,.84);
+      border-bottom: 1px solid var(--line); display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 5;
+      backdrop-filter: blur(12px);
+    }
+    .breadcrumb { display: flex; align-items: center; gap: 9px; color: #9aa5af; font-size: 12px; }
+    .breadcrumb strong { color: #344252; font-weight: 600; }
+    .top-actions { display: flex; align-items: center; gap: 17px; }
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #99a4ae; width: 15px; height: 15px; }
+    .search {
+      width: 224px; height: 36px; border: 1px solid #e9edf1; background: #fbfcfd;
+      border-radius: 8px; padding: 0 12px 0 35px; outline: none; color: var(--ink); font-size: 12px;
+      transition: .2s;
+    }
+    .search:focus { border-color: #8ad9c2; box-shadow: 0 0 0 3px rgba(16,169,130,.09); }
+    .icon-button {
+      width: 36px; height: 36px; border: 1px solid #e9edf1; background: #fff;
+      border-radius: 9px; color: #647483; display: grid; place-items: center; position: relative;
+      transition: .2s;
+    }
+    .icon-button:hover { border-color: #b8ddd2; color: var(--teal-dark); }
+    .icon-button svg { width: 16px; height: 16px; }
+    .notification-dot { width: 6px; height: 6px; background: #ed7771; border-radius: 50%; position: absolute; top: 7px; right: 7px; border: 1px solid white; }
+    .menu-toggle { display: none; }
+
+    .content { max-width: 1540px; margin: 0 auto; padding: 30px 36px 42px; }
+    .welcome-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+    h1 { font: 700 25px "Manrope", sans-serif; letter-spacing: -.8px; margin: 0 0 6px; }
+    .subtitle { color: var(--muted); margin: 0; font-size: 12px; }
+    .welcome-actions { display: flex; align-items: center; gap: 10px; }
+    .date-control, .button {
+      height: 38px; border: 1px solid #e3e8ed; border-radius: 8px; background: white;
+      color: #566575; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600; box-shadow: 0 2px 5px rgba(30,50,70,.02);
+    }
+    .date-control svg, .button svg { width: 14px; height: 14px; }
+    .button-primary {
+      color: white; background: #0da77f; border-color: #0da77f; padding: 0 14px;
+      box-shadow: 0 4px 10px rgba(13,167,127,.18);
+    }
+    .button-primary:hover { background: #098d6c; }
+    .date-control:hover, .button:not(.button-primary):hover { border-color: #bed9d1; color: var(--teal-dark); }
+
+    .overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 17px; }
+    .metric-card {
+      background: var(--surface); border: 1px solid #edf0f3; border-radius: var(--radius);
+      padding: 18px 19px 16px; box-shadow: var(--shadow); min-width: 0;
+    }
+    .metric-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .metric-label { color: #7e8b98; font-size: 11px; font-weight: 600; }
+    .metric-icon {
+      width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px;
+    }
+    .metric-icon svg { width: 15px; height: 15px; }
+    .icon-green { background: #e8f8f2; color: #10a982; }
+    .icon-blue { background: #eef2ff; color: #6e8fe4; }
+    .icon-amber { background: #fff5e8; color: #e2a03e; }
+    .icon-red { background: #fff0ef; color: #df7371; }
+    .metric-value { font: 700 27px "Manrope", sans-serif; letter-spacing: -.8px; line-height: 1; }
+    .metric-value small { font: 600 13px "DM Sans", sans-serif; color: #788694; letter-spacing: 0; }
+    .metric-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 10px; color: #8b98a4; }
+    .trend { color: #12a77f; font-weight: 700; }
+    .trend.warn { color: #dd9a39; }
+    .trend.down { color: #df7270; }
+    .tiny-spark { margin-left: auto; width: 65px; height: 22px; }
+
+    .primary-grid { display: grid; grid-template-columns: minmax(0, 1.72fr) minmax(285px, .92fr); gap: 17px; margin-bottom: 17px; }
+    .panel { background: var(--surface); border: 1px solid #edf0f3; border-radius: var(--radius); box-shadow: var(--shadow); min-width: 0; }
+    .panel-head { padding: 18px 20px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .panel-title { margin: 0; font: 700 14px "Manrope", sans-serif; letter-spacing: -.25px; }
+    .panel-subtitle { color: #99a3ad; font-size: 10px; margin-top: 4px; }
+    .chart-legend { display: flex; gap: 13px; align-items: center; color: #81909d; font-size: 10px; }
+    .legend-dot { width: 7px; height: 7px; display: inline-block; border-radius: 50%; margin-right: 5px; }
+    .range-switch { display: flex; background: #f4f6f8; border-radius: 7px; padding: 3px; gap: 2px; }
+    .range-switch button { border: 0; background: transparent; color: #8895a0; border-radius: 5px; padding: 5px 8px; font-size: 9px; font-weight: 600; }
+    .range-switch button.selected { color: #344454; background: white; box-shadow: 0 1px 4px rgba(20,40,60,.1); }
+    .chart-wrap { height: 235px; padding: 12px 17px 7px 12px; position: relative; }
+    #healthChart { width: 100%; height: 100%; display: block; }
+    .chart-tooltip {
+      position: absolute; display: none; pointer-events: none; padding: 7px 9px; border-radius: 7px;
+      background: #172b38; color: #fff; font-size: 10px; line-height: 1.5; box-shadow: 0 5px 15px #13243130;
+      transform: translate(-50%, -110%); white-space: nowrap; z-index: 2;
+    }
+    .chart-footer { border-top: 1px solid #f0f2f4; padding: 11px 20px 13px; display: flex; justify-content: space-between; color: #8a97a2; font-size: 10px; }
+    .chart-footer strong { color: #465565; font-weight: 600; }
+
+    .health-panel { padding-bottom: 16px; }
+    .health-score-area { padding: 18px 20px 11px; display: flex; align-items: center; gap: 17px; }
+    .score-ring { width: 112px; height: 112px; flex: 0 0 112px; position: relative; display: grid; place-items: center; }
+    .score-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+    .score-ring .score-number { font: 700 27px "Manrope", sans-serif; letter-spacing: -1px; }
+    .score-ring .score-caption { position: absolute; margin-top: 43px; font-size: 9px; color: #94a0aa; }
+    .health-summary { min-width: 0; }
+    .health-summary h3 { margin: 0 0 6px; font: 700 13px "Manrope", sans-serif; }
+    .health-summary p { margin: 0; color: #8995a0; font-size: 10px; line-height: 1.55; }
+    .status-chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 5px; padding: 4px 7px; color: #0d9874; background: #eaf8f3; font-size: 9px; font-weight: 700; margin-top: 10px; }
+    .status-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #10ad82; }
+    .health-breakdown { padding: 0 20px; }
+    .factor { margin-top: 12px; }
+    .factor-head { display: flex; justify-content: space-between; color: #7f8b97; font-size: 10px; margin-bottom: 6px; }
+    .factor-head strong { color: #465565; font-size: 10px; }
+    .factor-bar { height: 5px; border-radius: 5px; background: #eff2f4; overflow: hidden; }
+    .factor-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#21c598,#0c9e78); }
+    .factor-bar span.amber-bar { background: linear-gradient(90deg,#f4c26b,#e6a03a); }
+    .health-link { display: flex; justify-content: center; padding-top: 14px; }
+    .text-button { color: #0b9a75; border: 0; background: none; font-size: 10px; font-weight: 700; display: flex; gap: 5px; align-items: center; }
+    .text-button:hover { color: #08755b; }
+    .text-button svg { width: 12px; height: 12px; }
+
+    .bottom-grid { display: grid; grid-template-columns: minmax(0, 1.46fr) minmax(300px, 1fr); gap: 17px; }
+    .equipment-panel { overflow: hidden; }
+    .table-head { padding: 17px 20px 13px; display: flex; align-items: center; justify-content: space-between; }
+    .table-head-right { display: flex; align-items: center; gap: 11px; }
+    .filter-button { background: #fff; border: 1px solid #e7ebef; color: #71808e; border-radius: 7px; padding: 6px 9px; font-size: 10px; display: flex; align-items: center; gap: 6px; }
+    .filter-button svg { width: 13px; height: 13px; }
+    .filter-button:hover { border-color: #b9d8cf; color: var(--teal-dark); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    th { text-align: left; padding: 9px 13px; color: #98a3ad; background: #fafbfc; font-size: 9px; font-weight: 600; border-top: 1px solid #f1f3f5; border-bottom: 1px solid #f1f3f5; }
+    th:first-child, td:first-child { padding-left: 20px; }
+    td { padding: 11px 13px; border-bottom: 1px solid #f2f4f6; color: #687785; font-size: 10px; }
+    tbody tr { cursor: pointer; transition: background .15s; }
+    tbody tr:hover, tbody tr.selected-row { background: #f7fbf9; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .asset-cell { display: flex; align-items: center; gap: 9px; }
+    .asset-icon { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; background: #eef6f5; color: #368b7c; }
+    .asset-icon svg { width: 15px; height: 15px; }
+    .asset-name strong { display: block; color: #374656; font-size: 10px; font-weight: 700; }
+    .asset-name span { color: #9aa4ad; font-size: 9px; display: block; margin-top: 2px; }
+    .health-mini { display: flex; align-items: center; gap: 7px; }
+    .mini-track { width: 43px; height: 4px; background: #edf1f2; border-radius: 5px; overflow: hidden; }
+    .mini-track span { height: 100%; display: block; border-radius: 5px; background: #16aa80; }
+    .mini-track span.low { background: #e9a447; }
+    .health-mini b { color: #4c5a68; font-size: 10px; }
+    .table-status { padding: 4px 7px; border-radius: 5px; font-size: 9px; font-weight: 600; }
+    .status-optimal { color: #0d9a73; background: #eaf8f2; }
+    .status-watch { color: #c18327; background: #fff5e6; }
+    .status-critical { color: #d96663; background: #fff0ef; }
+    .risk-high { color: #d96663; font-weight: 700; }
+    .risk-medium { color: #d19438; font-weight: 700; }
+    .risk-low { color: #11a27a; font-weight: 700; }
+
+    .alerts-panel { padding-bottom: 5px; }
+    .alerts-list { padding: 6px 18px 0; }
+    .alert-item { display: flex; gap: 11px; padding: 12px 0; border-bottom: 1px solid #f0f2f4; }
+    .alert-item:last-child { border-bottom: 0; }
+    .alert-mark { flex: 0 0 29px; width: 29px; height: 29px; border-radius: 8px; display: grid; place-items: center; }
+    .alert-mark svg { width: 14px; height: 14px; }
+    .alert-mark.amber { color: #d28f2e; background: #fff5e6; }
+    .alert-mark.red { color: #d86a67; background: #fff0ef; }
+    .alert-mark.blue { color: #6e8fe4; background: #eef2ff; }
+    .alert-copy { min-width: 0; flex: 1; }
+    .alert-title { color: #43515f; font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+    .alert-description { color: #8d99a4; font-size: 9px; line-height: 1.45; }
+    .alert-time { color: #a1abb4; font-size: 9px; white-space: nowrap; }
+    .view-alerts { width: 100%; border: 0; background: transparent; color: #0b9a75; font-weight: 700; font-size: 10px; padding: 10px 0 12px; }
+    .view-alerts:hover { color: #08755b; }
+    .toast {
+      position: fixed; right: 22px; bottom: 22px; z-index: 20;
+      background: #173544; color: #fff; border-radius: 10px; padding: 12px 16px;
+      font-size: 12px; box-shadow: 0 9px 28px rgba(18,42,56,.22);
+      opacity: 0; transform: translateY(12px); pointer-events: none; transition: .25s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .overlay { display: none; }
+
+    @media (max-width: 1120px) {
+      .sidebar { width: 220px; flex-basis: 220px; }
+      .content { padding-left: 24px; padding-right: 24px; }
+      .topbar { padding: 0 24px; }
+      .primary-grid { grid-template-columns: minmax(0, 1.5fr) minmax(265px, .9fr); }
+      .overview-grid { gap: 11px; }
+      .metric-card { padding: 16px 14px; }
+      .bottom-grid { grid-template-columns: minmax(0, 1.25fr) minmax(280px, .9fr); }
+    }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .overlay.show { display: block; position: fixed; inset: 0; background: rgba(14,30,40,.38); z-index: 9; }
+      .menu-toggle { display: grid; margin-right: 12px; }
+      .topbar { justify-content: flex-start; }
+      .topbar-left { display: flex; align-items: center; }
+      .top-actions { margin-left: auto; }
+      .primary-grid { grid-template-columns: minmax(0, 1.35fr) minmax(255px, .9fr); }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      .topbar { height: 62px; padding: 0 16px; }
+      .breadcrumb { display: none; }
+      .top-actions { gap: 9px; }
+      .search { width: min(40vw, 190px); }
+      .content { padding: 23px 15px 30px; }
+      .welcome-row { align-items: flex-start; flex-direction: column; margin-bottom: 19px; }
+      h1 { font-size: 23px; }
+      .welcome-actions { width: 100%; }
+      .date-control { flex: 1; justify-content: center; }
+      .button-primary { flex: 1; justify-content: center; }
+      .overview-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .metric-card { min-height: 128px; padding: 14px; }
+      .metric-value { font-size: 24px; }
+      .metric-heading { margin-bottom: 12px; }
+      .primary-grid { grid-template-columns: 1fr; }
+      .chart-wrap { height: 220px; }
+      .health-score-area { justify-content: center; }
+      .health-panel .panel-head { padding-top: 16px; }
+      .bottom-grid { gap: 12px; }
+      .table-head { padding: 15px 14px 12px; }
+      th:first-child, td:first-child { padding-left: 14px; }
+      th, td { padding-left: 10px; padding-right: 10px; }
+      .panel-head { padding-left: 15px; padding-right: 15px; }
+      .chart-legend { display: none; }
+    }
+    @media (max-width: 390px) {
+      .search-wrap { display: none; }
+      .welcome-actions { gap: 7px; }
+      .date-control, .button { padding-left: 9px; padding-right: 9px; font-size: 10px; }
+      .overview-grid { gap: 8px; }
+      .metric-card { padding: 12px; }
+      .tiny-spark { width: 48px; }
+      .range-switch button { padding-left: 6px; padding-right: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 13.2 8.3 9l3.2 3 5.8-6 2.7 2.7M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17.3" cy="6" r="1.2" fill="white"/></svg>
+        </div>
+        <div class="brand-name">Cloud<span>Sense</span></div>
+      </div>
+      <div class="nav-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-item active" data-view="Overview">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="15" width="7" height="6" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>
+          Overview
+        </button>
+        <button class="nav-item" data-view="Assets">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m4.5 7.8 7.5 4.4 7.5-4.4M12 12.2V21" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Assets
+        </button>
+        <button class="nav-item" data-view="Analytics">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m7 15 4-4 3 2 6-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Analytics
+        </button>
+        <button class="nav-item" data-view="Alerts">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Alerts <span class="nav-count">3</span>
+        </button>
+        <button class="nav-item" data-view="Maintenance">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a5 5 0 0 0-6.4 6.4l-5 5a2.1 2.1 0 0 0 3 3l5-5a5 5 0 0 0 6.4-6.4l-3 3-3-3 3-3Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Maintenance
+        </button>
+      </nav>
+      <div style="height:27px"></div>
+      <div class="nav-label">SYSTEM</div>
+      <nav class="nav-list" aria-label="System navigation">
+        <button class="nav-item" data-view="Integrations">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="7" r="2.5" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="7" r="2.5" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="18" r="2.5" stroke="currentColor" stroke-width="1.7"/><path d="m8 8.5 2.5 7m5.5-7-2.5 7M8.5 7h7" stroke="currentColor" stroke-width="1.5"/></svg>
+          Integrations
+        </button>
+        <button class="nav-item" data-view="Settings">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="m19.4 15 .1.1 1.2.9-1.2 2.1-1.4-.5a8 8 0 0 1-1.5.9l-.2 1.5h-2.4l-.3-1.5a8 8 0 0 1-1.5-.9l-1.4.5-1.2-2.1 1.2-.9a7 7 0 0 1 0-1.8l-1.2-.9 1.2-2.1 1.4.5a8 8 0 0 1 1.5-.9l.3-1.5h2.4l.2 1.5a8 8 0 0 1 1.5.9l1.4-.5 1.2 2.1-1.2.9a7 7 0 0 1 0 1.8Z" transform="translate(-2 -1)" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          Settings
+        </button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="plan-card">
+        <div class="plan-top"><strong>Pro plan</strong><span>68% used</span></div>
+        <p>You've used 68% of your monthly data allowance.</p>
+        <div class="plan-progress"><span></span></div>
+        <div class="plan-foot"><span>68.2 GB</span><span>100 GB</span></div>
+      </div>
+      <div class="profile">
+        <div class="avatar">AM</div>
+        <div class="profile-info"><strong>Alex Morgan</strong><span>Plant Manager</span></div>
+        <button aria-label="Profile options">···</button>
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button menu-toggle" id="menuToggle" aria-label="Open navigation">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <div class="breadcrumb"><span>Workspace</span><span>/</span><strong id="breadcrumbPage">Overview</strong></div>
+        </div>
+        <div class="top-actions">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <input class="search" id="searchInput" type="search" placeholder="Search assets..." aria-label="Search assets">
+          </div>
+          <button class="icon-button" id="notificationButton" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="notification-dot"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="welcome-row">
+          <div>
+            <h1>Good morning, Alex <span aria-hidden="true">👋</span></h1>
+            <p class="subtitle">Here's what's happening across your assets today.</p>
+          </div>
+          <div class="welcome-actions">
+            <button class="date-control" id="dateButton">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M16 3v4M8 3v4M3 10h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span id="dateLabel">Today, June 18, 2025</span>
+              <svg viewBox="0 0 24 24" fill="none"><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="button button-primary" id="addAssetButton">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+              Add new asset
+            </button>
+          </div>
+        </section>
+
+        <section class="overview-grid" aria-label="Key metrics">
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-label">Total assets</span><span class="metric-icon icon-green"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m4.5 7.8 7.5 4.4 7.5-4.4M12 12.2V21" stroke="currentColor" stroke-width="1.7"/></svg></span></div>
+            <div class="metric-value" id="totalAssets">248</div>
+            <div class="metric-foot"><span class="trend">↑ 12.4%</span><span>vs. last month</span><svg class="tiny-spark" viewBox="0 0 65 22"><path d="M2 17 12 14 21 16 31 9 40 12 51 5 63 3" fill="none" stroke="#17b18a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-label">Operational</span><span class="metric-icon icon-blue"><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/></svg></span></div>
+            <div class="metric-value">231</div>
+            <div class="metric-foot"><span class="trend">↑ 3.2%</span><span>93.1% uptime</span><svg class="tiny-spark" viewBox="0 0 65 22"><path d="M2 17 12 12 21 14 31 8 40 10 51 4 63 5" fill="none" stroke="#7396eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-label">Needs attention</span><span class="metric-icon icon-amber"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2.8 19h18.4L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9v4.5M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+            <div class="metric-value" id="attentionCount">12</div>
+            <div class="metric-foot"><span class="trend warn">↑ 2 new</span><span>in the last 24 hours</span><svg class="tiny-spark" viewBox="0 0 65 22"><path d="M2 15 12 13 21 16 31 10 40 12 51 7 63 3" fill="none" stroke="#e5a33c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-label">Predicted failures</span><span class="metric-icon icon-red"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v10m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/></svg></span></div>
+            <div class="metric-value">3 <small>assets</small></div>
+            <div class="metric-foot"><span class="trend down">↓ 1 resolved</span><span>within 7 days</span><svg class="tiny-spark" viewBox="0 0 65 22"><path d="M2 5 12 7 21 4 31 11 40 9 51 15 63 18" fill="none" stroke="#e37572" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </article>
+        </section>
+
+        <section class="primary-grid">
+          <article class="panel chart-panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">Equipment health overview</h2>
+                <div class="panel-subtitle">Average health score across all monitored assets</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:15px">
+                <div class="chart-legend"><span><i class="legend-dot" style="background:#11aa82"></i>Health score</span><span><i class="legend-dot" style="background:#e9a23b"></i>Threshold</span></div>
+                <div class="range-switch" aria-label="Chart date range">
+                  <button data-range="24h">24H</button><button data-range="7d" class="selected">7D</button><button data-range="30d">30D</button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-wrap" id="chartWrap">
+              <canvas id="healthChart" aria-label="Equipment health score chart"></canvas>
+              <div class="chart-tooltip" id="chartTooltip"></div>
+            </div>
+            <div class="chart-footer"><span>Last updated <strong id="updatedTime">just now</strong></span><span>Data refreshes every 30 sec <span style="color:#12a77f">●</span></span></div>
+          </article>
+
+          <article class="panel health-panel">
+            <div class="panel-head">
+              <div><h2 class="panel-title">Overall health score</h2><div class="panel-subtitle">Fleet-wide predictive assessment</div></div>
+              <button class="icon-button" style="width:29px;height:29px;border:0;background:#f7f9fa" aria-label="More health score options">···</button>
+            </div>
+            <div class="health-score-area">
+              <div class="score-ring">
+                <svg viewBox="0 0 112 112" aria-hidden="true">
+                  <circle cx="56" cy="56" r="48" fill="none" stroke="#edf2f2" stroke-width="8"/>
+                  <circle cx="56" cy="56" r="48" fill="none" stroke="#16ad83" stroke-width="8" stroke-linecap="round" stroke-dasharray="301.59" stroke-dashoffset="57.3"/>
+                </svg>
+                <span class="score-number">81</span>
+                <span class="score-caption">out of 100</span>
+              </div>
+              <div class="health-summary">
+                <h3>Good condition</h3>
+                <p>Your fleet is performing well. A few assets may need proactive attention.</p>
+                <span class="status-chip">Stable this week</span>
+              </div>
+            </div>
+            <div class="health-breakdown">
+              <div class="factor"><div class="factor-head"><span>Performance</span><strong>88%</strong></div><div class="factor-bar"><span style="width:88%"></span></div></div>
+              <div class="factor"><div class="factor-head"><span>Vibration levels</span><strong>74%</strong></div><div class="factor-bar"><span class="amber-bar" style="width:74%"></span></div></div>
+              <div class="factor"><div class="factor-head"><span>Temperature</span><strong>92%</strong></div><div class="factor-bar"><span style="width:92%"></span></div></div>
+            </div>
+            <div class="health-link"><button class="text-button" id="healthDetails">View health report <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </article>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="panel equipment-panel">
+            <div class="table-head">
+              <div><h2 class="panel-title">Equipment status</h2><div class="panel-subtitle">Monitor and manage your connected assets</div></div>
+              <div class="table-head-right">
+                <button class="filter-button" id="filterButton"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M7 12h10m-7 5h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span id="filterLabel">All assets</span><svg viewBox="0 0 24 24" fill="none" style="width:11px"><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="text-button" id="allAssetsButton">View all <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ASSET</th><th>HEALTH</th><th>STATUS</th><th>RISK</th><th>LAST CHECK</th></tr></thead>
+                <tbody id="assetRows">
+                  <tr data-name="CNC Milling Machine 01" data-status="optimal" data-health="94">
+                    <td><div class="asset-cell"><span class="asset-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20V8h16v12M7 8V4h10v4M8 12h8M9 16h6M2 20h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="asset-name"><strong>CNC Milling Machine 01</strong><span>Production · Line A</span></span></div></td>
+                    <td><div class="health-mini"><span class="mini-track"><span style="width:94%"></span></span><b>94%</b></div></td><td><span class="table-status status-optimal">Optimal</span></td><td class="risk-low">Low</td><td>2 min ago</td>
+                  </tr>
+                  <tr data-name="Hydraulic Press 03" data-status="watch" data-health="68">
+                    <td><div class="asset-cell"><span class="asset-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 3h12v5H6zM8 8v5m8-5v5M5 13h14l2 7H3l2-7Zm7-5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="asset-name"><strong>Hydraulic Press 03</strong><span>Assembly · Line B</span></span></div></td>
+                    <td><div class="health-mini"><span class="mini-track"><span class="low" style="width:68%"></span></span><b>68%</b></div></td><td><span class="table-status status-watch">Watch</span></td><td class="risk-medium">Medium</td><td>8 min ago</td>
+                  </tr>
+                  <tr data-name="Air Compressor 02" data-status="critical" data-health="42">
+                    <td><div class="asset-cell"><span class="asset-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10h16v10H4zM7 10V7a5 5 0 0 1 10 0v3M8 15h2m4 0h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="asset-name"><strong>Air Compressor 02</strong><span>Utilities · Plant floor</span></span></div></td>
+                    <td><div class="health-mini"><span class="mini-track"><span class="low" style="width:42%;background:#e67570"></span></span><b>42%</b></div></td><td><span class="table-status status-critical">Critical</span></td><td class="risk-high">High</td><td>1 min ago</td>
+                  </tr>
+                  <tr data-name="Conveyor Belt Motor 04" data-status="optimal" data-health="89">
+                    <td><div class="asset-cell"><span class="asset-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="17" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="17" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 14h18M6 14V7h12v7M9 7V4h6v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="asset-name"><strong>Conveyor Belt Motor 04</strong><span>Packaging · Line C</span></span></div></td>
+                    <td><div class="health-mini"><span class="mini-track"><span style="width:89%"></span></span><b>89%</b></div></td><td><span class="table-status status-optimal">Optimal</span></td><td class="risk-low">Low</td><td>5 min ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel alerts-panel">
+            <div class="panel-head">
+              <div><h2 class="panel-title">Recent alerts</h2><div class="panel-subtitle">Stay ahead of potential issues</div></div>
+              <span class="nav-count" style="margin:0">3 new</span>
+            </div>
+            <div class="alerts-list">
+              <div class="alert-item">
+                <span class="alert-mark amber"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2.8 19h18.4L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9v4m0 3h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                <div class="alert-copy"><div class="alert-title">Vibration threshold exceeded</div><div class="alert-description">Hydraulic Press 03 · Vibration at 8.2 mm/s</div></div><span class="alert-time">12m</span>
+              </div>
+              <div class="alert-item">
+                <span class="alert-mark red"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v10m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/></svg></span>
+                <div class="alert-copy"><div class="alert-title">Failure predicted in 5 days</div><div class="alert-description">Air Compressor 02 · Bearing wear detected</div></div><span class="alert-time">38m</span>
+              </div>
+              <div class="alert-item">
+                <span class="alert-mark blue"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18m0-18a7 7 0 0 1 0 14m0-14a7 7 0 0 0 0 14M5 7h14M5 17h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                <div class="alert-copy"><div class="alert-title">Temperature trending upward</div><div class="alert-description">Cooling Pump 01 · +12°C over baseline</div></div><span class="alert-time">1h</span>
+              </div>
+            </div>
+            <button class="view-alerts" id="viewAlertsButton">View all alerts →</button>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const canvas = document.getElementById('healthChart');
+    const ctx = canvas.getContext('2d');
+    const chartWrap = document.getElementById('chartWrap');
+    const tooltip = document.getElementById('chartTooltip');
+    const rangeButtons = document.querySelectorAll('.range-switch button');
+    let currentRange = '7d';
+    let selectedAsset = null;
+    let chartPoints = [];
+    let filteredRange = 0;
+
+    const rangeData = {
+      '24h': { labels: ['12 AM','4 AM','8 AM','12 PM','4 PM','8 PM','Now'], values: [78,80,79,83,82,84,81] },
+      '7d': { labels: ['Jun 12','Jun 13','Jun 14','Jun 15','Jun 16','Jun 17','Jun 18'], values: [75,78,76,82,79,84,81] },
+      '30d': { labels: ['May 20','May 25','May 30','Jun 04','Jun 09','Jun 14','Jun 18'], values: [70,74,72,78,76,84,81] }
+    };
+
+    function drawChart() {
+      const rect = chartWrap.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = rect.width;
+      const height = rect.height;
+      if (!width || !height) return;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const data = rangeData[currentRange];
+      let values = [...data.values];
+      if (selectedAsset) {
+        const adjust = selectedAsset.health - 81;
+        values = values.map((v, i) => Math.max(28, Math.min(98, v + adjust + (i % 2 ? 1 : -1))));
+      }
+      const pad = { left: 35, right: 14, top: 13, bottom: 28 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const min = 40, max = 100;
+      const y = val => pad.top + (max - val) / (max - min) * plotH;
+      const x = i => pad.left + i * plotW / (values.length - 1);
+      const gridVals = [40, 60, 80, 100];
+
+      ctx.font = '10px DM Sans, sans-serif';
+      gridVals.forEach(v => {
+        const gy = y(v);
+        ctx.beginPath();
+        ctx.setLineDash([3, 4]);
+        ctx.strokeStyle = '#edf1f3';
+        ctx.lineWidth = 1;
+        ctx.moveTo(pad.left, gy);
+        ctx.lineTo(width - pad.right, gy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#a0aab3';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(v, pad.left - 9, gy);
+      });
+
+      const thresholdY = y(60);
+      ctx.beginPath();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = '#e6aa4b';
+      ctx.lineWidth = 1.2;
+      ctx.moveTo(pad.left, thresholdY);
+      ctx.lineTo(width - pad.right, thresholdY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const gradient = ctx.createLinearGradient(0, pad.top, 0, height - pad.bottom);
+      gradient.addColorStop(0, 'rgba(19, 176, 132, .19)');
+      gradient.addColorStop(1, 'rgba(19, 176, 132, 0)');
+      ctx.beginPath();
+      values.forEach((v, i) => i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v)));
+      ctx.lineTo(x(values.length - 1), height - pad.bottom);
+      ctx.lineTo(x(0), height - pad.bottom);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      values.forEach((v, i) => i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v)));
+      ctx.strokeStyle = '#12a982';
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      chartPoints = values.map((v, i) => ({ x: x(i), y: y(v), value: v, label: data.labels[i] }));
+      chartPoints.forEach((p, i) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, i === values.length - 1 ? 4 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#12a982';
+        ctx.stroke();
+      });
+
+      ctx.fillStyle = '#99a4ae';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      data.labels.forEach((label, i) => ctx.fillText(label, x(i), height - pad.bottom + 11));
+      ctx.fillStyle = '#d69a3d';
+      ctx.textAlign = 'left';
+      ctx.fillText('Threshold', width - pad.right - 48, thresholdY - 13);
+    }
+
+    canvas.addEventListener('mousemove', event => {
+      if (!chartPoints.length) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = event.clientX - rect.left;
+      const nearest = chartPoints.reduce((a, b) => Math.abs(b.x - mx) < Math.abs(a.x - mx) ? b : a);
+      if (Math.abs(nearest.x - mx) > 24) { tooltip.style.display = 'none'; return; }
+      tooltip.innerHTML = `<strong>${nearest.label}</strong><br>Health score: ${nearest.value}%`;
+      tooltip.style.left = `${nearest.x}px`;
+      tooltip.style.top = `${nearest.y}px`;
+      tooltip.style.display = 'block';
+    });
+    canvas.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+
+    rangeButtons.forEach(button => button.addEventListener('click', () => {
+      rangeButtons.forEach(b => b.classList.remove('selected'));
+      button.classList.add('selected');
+      currentRange = button.dataset.range;
+      drawChart();
+    }));
+
+    const rows = [...document.querySelectorAll('#assetRows tr')];
+    rows.forEach(row => row.addEventListener('click', () => {
+      rows.forEach(r => r.classList.remove('selected-row'));
+      row.classList.add('selected-row');
+      selectedAsset = {
+        name: row.dataset.name,
+        health: Number(row.dataset.health)
+      };
+      document.querySelector('.chart-subtitle');
+      document.querySelector('.chart-panel .panel-subtitle').textContent = `${selectedAsset.name} · Health score trend`;
+      drawChart();
+      showToast(`Showing health trend for ${selectedAsset.name}`);
+    }));
+
+    document.getElementById('searchInput').addEventListener('input', event => {
+      const query = event.target.value.toLowerCase().trim();
+      rows.forEach(row => {
+        row.style.display = row.dataset.name.toLowerCase().includes(query) ? '' : 'none';
+      });
+    });
+
+    let filterMode = 0;
+    const filterButton = document.getElementById('filterButton');
+    filterButton.addEventListener('click', () => {
+      filterMode = (filterMode + 1) % 4;
+      const modes = [
+        { label: 'All assets', status: '' },
+        { label: 'Optimal', status: 'optimal' },
+        { label: 'Needs attention', status: 'watch' },
+        { label: 'Critical', status: 'critical' }
+      ];
+      document.getElementById('filterLabel').textContent = modes[filterMode].label;
+      rows.forEach(row => row.style.display = !modes[filterMode].status || row.dataset.status === modes[filterMode].status ? '' : 'none');
+      document.getElementById('searchInput').value = '';
+    });
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    document.getElementById('addAssetButton').addEventListener('click', () => {
+      const name = prompt('Enter a name for your new asset:');
+      if (!name || !name.trim()) return;
+      const row = document.createElement('tr');
+      row.dataset.name = name.trim();
+      row.dataset.status = 'optimal';
+      row.dataset.health = '100';
+      row.innerHTML = `<td><div class="asset-cell"><span class="asset-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m4.5 7.8 7.5 4.4 7.5-4.4M12 12.2V21" stroke="currentColor" stroke-width="1.7"/></svg></span><span class="asset-name"><strong>${escapeHTML(name.trim())}</strong><span>New asset · Not assigned</span></span></div></td><td><div class="health-mini"><span class="mini-track"><span style="width:100%"></span></span><b>100%</b></div></td><td><span class="table-status status-optimal">Connecting</span></td><td class="risk-low">Low</td><td>Just now</td>`;
+      document.getElementById('assetRows').prepend(row);
+      row.addEventListener('click', () => {
+        rows.forEach(r => r.classList.remove('selected-row'));
+        row.classList.add('selected-row');
+        selectedAsset = { name: row.dataset.name, health: 100 };
+        document.querySelector('.chart-panel .panel-subtitle').textContent = `${selectedAsset.name} · Health score trend`;
+        drawChart();
+      });
+      document.getElementById('totalAssets').textContent = Number(document.getElementById('totalAssets').textContent) + 1;
+      showToast(`${name.trim()} added to your asset list`);
+    });
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+
+    document.getElementById('dateButton').addEventListener('click', () => {
+      const now = new Date();
+      document.getElementById('dateLabel').textContent = `Today, ${now.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'})}`;
+      showToast('Showing the latest equipment data');
+    });
+    document.getElementById('healthDetails').addEventListener('click', () => showToast('Health report is up to date — fleet score: 81 / 100'));
+    document.getElementById('allAssetsButton').addEventListener('click', () => {
+      filterMode = 0;
+      document.getElementById('filterLabel').textContent = 'All assets';
+      document.getElementById('searchInput').value = '';
+      rows.forEach(row => row.style.display = '');
+      showToast('Showing all connected assets');
+    });
+    document.getElementById('viewAlertsButton').addEventListener('click', () => showToast('You have 3 active alerts requiring review'));
+    document.getElementById('notificationButton').addEventListener('click', () => showToast('3 new alerts — check Recent alerts for details'));
+
+    document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+      item.classList.add('active');
+      const view = item.dataset.view;
+      document.getElementById('breadcrumbPage').textContent = view;
+      if (view !== 'Overview') showToast(`${view} workspace selected`);
+      if (window.innerWidth <= 900) closeMenu();
+    }));
+
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    function closeMenu() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+    document.getElementById('menuToggle').addEventListener('click', () => {
+      sidebar.classList.add('open');
+      overlay.classList.add('show');
+    });
+    overlay.addEventListener('click', closeMenu);
+
+    function refreshTelemetry() {
+      const last = rangeData[currentRange].values;
+      const latest = Math.max(50, Math.min(97, last[last.length - 1] + (Math.random() * 2 - 1)));
+      rangeData[currentRange].values[rangeData[currentRange].values.length - 1] = Math.round(latest);
+      document.getElementById('updatedTime').textContent = 'just now';
+      if (!selectedAsset) drawChart();
+    }
+    setInterval(refreshTelemetry, 30000);
+    window.addEventListener('resize', drawChart);
+    window.addEventListener('load', drawChart);
+    drawChart();
+  </script>
+</body>
+</html>
